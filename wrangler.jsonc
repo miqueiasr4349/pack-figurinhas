@@ -1,0 +1,27 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "pack-figurinhas",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-11",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "routes": [
+    {
+      "pattern": "altaoffice.com.br/pack-figurinhas",
+      "zone_name": "altaoffice.com.br"
+    },
+    {
+      "pattern": "altaoffice.com.br/pack-figurinhas/*",
+      "zone_name": "altaoffice.com.br"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  }
+}
