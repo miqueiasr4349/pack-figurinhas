@@ -36,6 +36,15 @@
 #acesso .offer-basic .caption{color:#59667d}
 </style>
 <style>.sticker-gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;padding:2px 0 12px}.sticker-gallery li{flex:0 0 88%;aspect-ratio:auto;scroll-snap-align:start;background:#16121a}.sticker-gallery img{width:100%;height:auto;max-height:none;padding:0;object-fit:contain}.sticker-gallery:focus-visible{outline:3px solid #bd398b;outline-offset:3px}</style>
+<style>
+.gallery-controls{display:flex;align-items:center;justify-content:center;gap:14px;margin:12px 0 4px}
+.gallery-arrow{display:grid;place-items:center;width:36px;height:36px;border:1px solid #e2cbdc;border-radius:50%;background:#fff;color:#8f1767;font-size:1.6rem;line-height:1;cursor:pointer}
+.gallery-dots{display:flex;align-items:center;gap:9px}
+.gallery-dots button{width:10px;height:10px;padding:0;border:0;border-radius:99px;background:#c6b4c6;cursor:pointer}
+.gallery-dots button[aria-current=true]{width:22px;background:#dc246f}
+.gallery-toggle{border:0;background:transparent;padding:8px;color:#6b4561;font-size:.75rem;cursor:pointer}
+.gallery-arrow:focus-visible,.gallery-dots button:focus-visible,.gallery-toggle:focus-visible{outline:3px solid #a32377;outline-offset:3px}
+</style>
 </head>
 <body>
   <main>
@@ -138,13 +147,24 @@
 
     <section class="section" aria-labelledby="galeria-titulo">
       <h2 id="galeria-titulo">Dê uma espiada no que você pode criar</h2>
-      <p class="section-copy">Veja exemplos de figurinhas de treino. Deslize para o lado para conferir as quatro imagens.</p>
+      <p class="section-copy">Veja exemplos de figurinhas de treino. As imagens passam automaticamente; você também pode deslizar ou escolher uma imagem.</p>
       <ul class="sticker-gallery" aria-label="Galeria de exemplos de figurinhas de treino" tabindex="0">
         <li><img src="stories/galeria-treino-01.webp" width="640" height="1138" loading="lazy" decoding="async" alt="Montagem de figurinhas para treino, com frases sobre academia e motivação"></li>
         <li><img src="stories/galeria-treino-02.webp" width="640" height="1068" loading="lazy" decoding="async" alt="Pack de figurinhas fitness com frases para a rotina de exercícios"></li>
         <li><img src="stories/galeria-treino-03.webp" width="640" height="1138" loading="lazy" decoding="async" alt="Montagem de figurinhas de treino, cardio e motivação"></li>
         <li><img src="stories/galeria-treino-04.webp" width="640" height="1138" loading="lazy" decoding="async" alt="Exemplos de figurinhas sobre foco, constância e treino"></li>
       </ul>
+      <div class="gallery-controls" role="group" aria-label="Controles da galeria">
+        <button type="button" class="gallery-arrow" data-gallery-prev aria-label="Imagem anterior">‹</button>
+        <div class="gallery-dots" role="group" aria-label="Escolha uma imagem">
+          <button type="button" data-gallery-slide="0" aria-label="Ver imagem 1" aria-current="true"></button>
+          <button type="button" data-gallery-slide="1" aria-label="Ver imagem 2"></button>
+          <button type="button" data-gallery-slide="2" aria-label="Ver imagem 3"></button>
+          <button type="button" data-gallery-slide="3" aria-label="Ver imagem 4"></button>
+        </div>
+        <button type="button" class="gallery-arrow" data-gallery-next aria-label="Próxima imagem">›</button>
+      </div>
+      <button type="button" class="gallery-toggle" data-gallery-toggle>⏸ Pausar apresentação</button>
     </section>
 
     <section class="section tint business-section" aria-labelledby="negocio" data-reveal>
@@ -290,5 +310,57 @@
     <p>Podemos usar cookies da Meta para medir o desempenho dos anúncios.</p>
     <div><button type="button" id="marketing-deny">Recusar</button> <button type="button" id="marketing-allow">Aceitar</button></div>
   </aside>
+<script>
+(() => {
+  const gallery = document.querySelector('.sticker-gallery');
+  const dots = [...document.querySelectorAll('[data-gallery-slide]')];
+  const slides = [...gallery.querySelectorAll('li')];
+  const toggle = document.querySelector('[data-gallery-toggle]');
+  const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let paused = motion.matches, visible = false, timer, touching = false;
+
+  function indexOfCurrent() {
+    const left = gallery.getBoundingClientRect().left;
+    return slides.reduce((best, slide, i) =>
+      Math.abs(slide.getBoundingClientRect().left - left) <
+      Math.abs(slides[best].getBoundingClientRect().left - left) ? i : best, 0);
+  }
+  function updateDots() {
+    const current = indexOfCurrent();
+    dots.forEach((dot, i) => i === current ? dot.setAttribute('aria-current', 'true') : dot.removeAttribute('aria-current'));
+  }
+  function show(index) {
+    const slide = slides[(index + slides.length) % slides.length];
+    const left = gallery.scrollLeft + slide.getBoundingClientRect().left - gallery.getBoundingClientRect().left;
+    gallery.scrollTo({ left, behavior: motion.matches ? 'auto' : 'smooth' });
+  }
+  function refreshToggle() {
+    toggle.textContent = paused ? '▶ Reproduzir apresentação' : '⏸ Pausar apresentação';
+    toggle.setAttribute('aria-pressed', paused ? 'true' : 'false');
+  }
+  function resetTimer() {
+    clearInterval(timer);
+    timer = setInterval(() => {
+      if (!paused && visible && !document.hidden && !touching && !gallery.matches(':hover') && !gallery.matches(':focus-within')) {
+        show(indexOfCurrent() + 1);
+      }
+    }, 5000);
+  }
+  document.querySelector('[data-gallery-prev]').addEventListener('click', () => { show(indexOfCurrent()-1); resetTimer(); });
+  document.querySelector('[data-gallery-next]').addEventListener('click', () => { show(indexOfCurrent()+1); resetTimer(); });
+  dots.forEach((dot, i) => dot.addEventListener('click', () => { show(i); resetTimer(); }));
+  toggle.addEventListener('click', () => { paused = !paused; refreshToggle(); resetTimer(); });
+  gallery.addEventListener('scroll', updateDots, { passive: true });
+  gallery.addEventListener('pointerdown', () => { touching = true; resetTimer(); });
+  window.addEventListener('pointerup', () => { touching = false; });
+  gallery.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault(); show(indexOfCurrent() + (e.key === 'ArrowRight' ? 1 : -1)); resetTimer();
+  });
+  motion.addEventListener('change', e => { if (e.matches) { paused = true; refreshToggle(); } });
+  new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }, { threshold: .2 }).observe(gallery);
+  refreshToggle(); updateDots(); resetTimer();
+})();
+</script>
 </body>
 </html>
