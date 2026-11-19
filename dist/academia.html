@@ -164,7 +164,6 @@
         </div>
         <button type="button" class="gallery-arrow" data-gallery-next aria-label="Próxima imagem">›</button>
       </div>
-      <button type="button" class="gallery-toggle" data-gallery-toggle>⏸ Pausar apresentação</button>
     </section>
 
     <section class="section tint business-section" aria-labelledby="negocio" data-reveal>
@@ -315,9 +314,8 @@
   const gallery = document.querySelector('.sticker-gallery');
   const dots = [...document.querySelectorAll('[data-gallery-slide]')];
   const slides = [...gallery.querySelectorAll('li')];
-  const toggle = document.querySelector('[data-gallery-toggle]');
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let paused = motion.matches, visible = false, timer, touching = false;
+  let visible = false, timer, touching = false;
 
   function indexOfCurrent() {
     const left = gallery.getBoundingClientRect().left;
@@ -334,22 +332,17 @@
     const left = gallery.scrollLeft + slide.getBoundingClientRect().left - gallery.getBoundingClientRect().left;
     gallery.scrollTo({ left, behavior: motion.matches ? 'auto' : 'smooth' });
   }
-  function refreshToggle() {
-    toggle.textContent = paused ? '▶ Reproduzir apresentação' : '⏸ Pausar apresentação';
-    toggle.setAttribute('aria-pressed', paused ? 'true' : 'false');
-  }
   function resetTimer() {
     clearInterval(timer);
     timer = setInterval(() => {
-      if (!paused && visible && !document.hidden && !touching && !gallery.matches(':hover') && !gallery.matches(':focus-within')) {
+      if (!motion.matches && visible && !document.hidden && !touching && !gallery.matches(':hover') && !gallery.matches(':focus-within')) {
         show(indexOfCurrent() + 1);
       }
-    }, 5000);
+    }, 3000);
   }
   document.querySelector('[data-gallery-prev]').addEventListener('click', () => { show(indexOfCurrent()-1); resetTimer(); });
   document.querySelector('[data-gallery-next]').addEventListener('click', () => { show(indexOfCurrent()+1); resetTimer(); });
   dots.forEach((dot, i) => dot.addEventListener('click', () => { show(i); resetTimer(); }));
-  toggle.addEventListener('click', () => { paused = !paused; refreshToggle(); resetTimer(); });
   gallery.addEventListener('scroll', updateDots, { passive: true });
   gallery.addEventListener('pointerdown', () => { touching = true; resetTimer(); });
   window.addEventListener('pointerup', () => { touching = false; });
@@ -357,9 +350,8 @@
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     e.preventDefault(); show(indexOfCurrent() + (e.key === 'ArrowRight' ? 1 : -1)); resetTimer();
   });
-  motion.addEventListener('change', e => { if (e.matches) { paused = true; refreshToggle(); } });
   new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }, { threshold: .2 }).observe(gallery);
-  refreshToggle(); updateDots(); resetTimer();
+  updateDots(); resetTimer();
 })();
 </script>
 </body>
